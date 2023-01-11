@@ -2,7 +2,6 @@ package src
 
 import (
 	"context"
-	"fmt"
 	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
@@ -37,7 +36,6 @@ var upgrader = websocket.Upgrader{
 }
 
 func AddWsEvent(eventName string, channelFun ChannelFun, onMessage OnMessage) {
-	fmt.Printf("add ws event")
 	if _, ok := subScribeFuncs[eventName]; !ok {
 		subScribeFuncs[eventName] = OnMessageWrapper{
 			OnMessage:  onMessage,

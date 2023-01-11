@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gorilla/websocket"
-	"github.com/zeromicro/go-zero/core/jsonx"
+	jsoniter "github.com/json-iterator/go"
 	"log"
 	"sync"
 	"time"
@@ -126,7 +126,6 @@ func (c *Client) UnSubscribe(channel string) int64 {
 }
 
 func (c *Client) close(pubSubClient *PubSubClient) {
-	fmt.Printf("c.SubIds %+v \n", c.SubIds)
 	for _, subId := range c.SubIds {
 		pubSubClient.UnSubscribe(subId)
 	}
@@ -153,7 +152,7 @@ func (c *Client) ReadPump(pubSubClient *PubSubClient) {
 		}
 		message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
 		var event Event
-		_ = jsonx.Unmarshal(message, &event)
+		_ = jsoniter.Unmarshal(message, &event)
 		if onMessageWrapper, ok := subScribeFuncs[event.EventName]; ok {
 			onMessage := onMessageWrapper.OnMessage
 			channelKeyFun := onMessageWrapper.ChannelFun

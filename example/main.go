@@ -8,7 +8,7 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/service"
 	"github.com/zeromicro/go-zero/rest"
-	"kenisad5566/redissub/src"
+	"github.com/kenisad5566/redissub/src"
 	"net/http"
 	"time"
 )
