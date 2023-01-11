@@ -1,5 +1,5 @@
 # redissub
-A redis subscription libary for go
+A redis subscription libaray for go
 
 
 ### Installation
