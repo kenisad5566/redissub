@@ -51,12 +51,17 @@ func main() {
 	})
 
 	PubSubClient := src.NewPubSubClient(src.PubSubRedisOptions{Publisher:pub, Subscriber: sub})
-	go PubSubClient.Run()
 
 
 	mockChannelKey := "mockChannel"
-	src.AddWsEvent("dddd", func(ctx context.Context, data []byte) string {
+	src.AddWsEvent("joinRoom", func(ctx context.Context, data []byte) string {
 		return mockChannelKey
+	}, func(client *src.Client, data []byte) {
+		client.Send <- data
+	})
+
+	src.AddWsEvent("sendMsg", func(ctx context.Context, data []byte) string {
+		return "sendMsg"
 	}, func(client *src.Client, data []byte) {
 		client.Send <- data
 	})
@@ -94,7 +99,9 @@ func main() {
 			select {
 			case <-ticker.C:
 				fmt.Println("send msg")
-				PubSubClient.Publish(context.Background(), mockChannelKey, []byte("asdfasdfa"))
+				fmt.Printf("PubSubClient %+v \n", PubSubClient)
+				PubSubClient.Publish(context.Background(), mockChannelKey, []byte("welcome someone"))
+				PubSubClient.Publish(context.Background(), "sendMsg", []byte("hello world"))
 			}
 		}
 	}()
