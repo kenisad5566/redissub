@@ -1,4 +1,4 @@
-module kenisad5566/redissub
+module github.com/kenisad5566/redissub
 
 go 1.19
 
