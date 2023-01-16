@@ -5,10 +5,10 @@ import (
 	"flag"
 	"fmt"
 	"github.com/go-redis/redis/v8"
+	"github.com/kenisad5566/redissub/src"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/service"
 	"github.com/zeromicro/go-zero/rest"
-	"github.com/kenisad5566/redissub/src"
 	"net/http"
 	"time"
 )
@@ -54,7 +54,7 @@ func main() {
 
 
 	mockChannelKey := "mockChannel"
-	src.AddWsEvent("joinRoom", func(ctx context.Context, data []byte) string {
+	src.AddWsEvent("Room", func(ctx context.Context, data []byte) string {
 		return mockChannelKey
 	}, func(client *src.Client, data []byte) {
 		client.Send <- data

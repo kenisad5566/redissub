@@ -99,12 +99,12 @@ func (p *PubSubClient) Publish(ctx context.Context, channel string, message []by
 
 func (p *PubSubClient) reSubscribe() {
 	channels := getKeys(p.subsRefsMap)
+	p.PubSub.Close()
 	p.PubSub = p.Subscriber.Subscribe(context.Background(), channels...)
 	p.DropRun <- struct{}{}
 }
 
 func (p *PubSubClient) Run() {
-	defer p.PubSub.Close()
 	for {
 		select {
 		case msg, ok := <-p.PubSub.Channel():
