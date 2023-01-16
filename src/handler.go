@@ -20,7 +20,7 @@ type (
 		EventName string `json:"EventName"`
 		From      string `json:"From"`
 		To        string `json:"To"`
-		Data      []byte `json:"Data"`
+		Data      string `json:"Data"`
 	}
 )
 

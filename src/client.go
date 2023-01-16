@@ -158,7 +158,7 @@ func (c *Client) ReadPump(pubSubClient *PubSubClient) {
 			channelKeyFun := onMessageWrapper.ChannelFun
 			var channel = event.EventName
 			if channelKeyFun != nil {
-				channel = channelKeyFun(c.Ctx, event.Data)
+				channel = channelKeyFun(c.Ctx, []byte(event.Data))
 			}
 
 			go func() {
