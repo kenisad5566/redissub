@@ -48,38 +48,8 @@ type (
 
 	HandlerSubId func(subId int64) error
 	GetSubId     func(channel string) int64
-
-	ChannelClients struct {
-		SubIdClient map[string][]*Client
-		mu          sync.Mutex
-	}
 )
 
-func (ncc *ChannelClients) subscribe(channel string, client *Client) {
-	ncc.mu.Lock()
-	defer ncc.mu.Unlock()
-	if _, ok := ncc.SubIdClient[channel]; !ok {
-		ncc.SubIdClient[channel] = append(ncc.SubIdClient[channel], client)
-	}
-}
-
-func (ncc *ChannelClients) unSubscribe(channel string, client *Client) {
-	ncc.mu.Lock()
-	defer ncc.mu.Unlock()
-	if _, ok := ncc.SubIdClient[channel]; !ok {
-		for idx, v := range ncc.SubIdClient[channel] {
-			// remove client from channel'subId map
-			if v == client {
-				ncc.SubIdClient[channel] = append(ncc.SubIdClient[channel][:idx], ncc.SubIdClient[channel][idx+1:]...)
-			}
-		}
-
-		// empty
-		if len(ncc.SubIdClient[channel]) == 0 {
-			delete(ncc.SubIdClient, channel)
-		}
-	}
-}
 
 func MustNewClient(ctx context.Context, conn *websocket.Conn) *Client {
 	return &Client{
