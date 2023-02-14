@@ -1,4 +1,4 @@
-package src
+package redissub
 
 import (
 	"context"
@@ -21,6 +21,7 @@ type (
 		From      string `json:"From"`
 		To        string `json:"To"`
 		Data      string `json:"Data"`
+		Time      int64 `json:"Time"`
 	}
 )
 

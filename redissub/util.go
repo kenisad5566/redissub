@@ -1,4 +1,4 @@
-package src
+package redissub
 
 // Contains reports whether v is present in s.
 func Contains(s []string, v string) bool {

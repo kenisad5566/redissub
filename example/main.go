@@ -5,7 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/go-redis/redis/v8"
-	"github.com/kenisad5566/redissub/src"
+	"github.com/kenisad5566/redissub/redissub"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/service"
 	"github.com/zeromicro/go-zero/rest"
@@ -50,19 +50,19 @@ func main() {
 		DB:		  0,  // use default DB
 	})
 
-	PubSubClient := src.NewPubSubClient(src.PubSubRedisOptions{Publisher:pub, Subscriber: sub})
+	PubSubClient := redissub.NewPubSubClient(redissub.PubSubRedisOptions{Publisher: pub, Subscriber: sub})
 
 
 	mockChannelKey := "mockChannel"
-	src.AddWsEvent("Room", func(ctx context.Context, data []byte) string {
+	redissub.AddWsEvent("Room", func(ctx context.Context, data []byte) string {
 		return mockChannelKey
-	}, func(client *src.Client, data []byte) {
+	}, func(client *redissub.Client, data []byte) {
 		client.Send <- data
 	})
 
-	src.AddWsEvent("sendMsg", func(ctx context.Context, data []byte) string {
+	redissub.AddWsEvent("sendMsg", func(ctx context.Context, data []byte) string {
 		return "sendMsg"
-	}, func(client *src.Client, data []byte) {
+	}, func(client *redissub.Client, data []byte) {
 		client.Send <- data
 	})
 
@@ -88,7 +88,7 @@ func main() {
 		Method: http.MethodGet,
 		Path:   "/ws",
 		Handler: func(w http.ResponseWriter, r *http.Request) {
-			src.ServeWs(PubSubClient, w, r)
+			redissub.ServeWs(PubSubClient, w, r)
 		},
 	})
 
