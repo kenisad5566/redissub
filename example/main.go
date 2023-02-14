@@ -49,9 +49,11 @@ func main() {
 		Password: "", // no password set
 		DB:		  0,  // use default DB
 	})
+	solidOption := &redissub.SolidOption{
+		ExpireTime:3600 * time.Second,
+	}
 
-	PubSubClient := redissub.NewPubSubClient(redissub.PubSubRedisOptions{Publisher: pub, Subscriber: sub})
-
+	PubSubClient := redissub.NewPubSubClient(redissub.PubSubRedisOptions{Publisher: pub, Subscriber: sub, SolidOption:solidOption })
 
 	mockChannelKey := "mockChannel"
 	redissub.AddWsEvent("Room", func(ctx context.Context, data []byte) string {
