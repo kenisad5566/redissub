@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	offlinePrefix = "redissub:offline:zset:%v:%v"
+	offlinePrefix = "redissub:offline:zset:%v"
 )
 
 type (
@@ -21,14 +21,21 @@ type (
 	}
 )
 
-func (o *OffLine) AddToOffline (ctx context.Context, data *Event)  {
-	byteData, err := jsoniter.Marshal(data); if err != nil {
-		return
+func (o *OffLine) AddToOffline (ctx context.Context, data []byte)  {
+	fmt.Println("AddToOffline enter")
+	var event Event
+	err := jsoniter.Unmarshal(data, &event)
+	fmt.Println("AddToOffline err",err)
+
+	if err == nil {
+		fmt.Println("AddToOffline event", event)
+		fmt.Println("AddToOffline event", o)
+		o.Rdb.ZAdd(ctx, o.Key, &red.Z{
+			Score: float64(event.Time),
+			Member: string(data),
+		})
 	}
-	o.Rdb.ZAdd(ctx, o.Key, &red.Z{
-		Score: float64(data.Time),
-		Member: string(byteData),
-	})
+
 }
 
 func (o *OffLine) MessageByOffset (ctx context.Context, offset int64) ([]*Event,  error) {

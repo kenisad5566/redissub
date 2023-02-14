@@ -2,6 +2,7 @@ package redissub
 
 import (
 	"context"
+	"fmt"
 	red "github.com/go-redis/redis/v8"
 	jsoniter "github.com/json-iterator/go"
 	"math"
@@ -107,10 +108,9 @@ func (p *PubSubClient) Publish(ctx context.Context, channel string, message []by
 		Rdb:p.Publisher,
 		Key: GenOfflineKey(channel),
 	}
-	var event Event
-	err := jsoniter.Unmarshal(message, &event); if err == nil {
-		offline.AddToOffline(ctx, &event)
-	}
+	fmt.Println("Publish", string(message))
+	fmt.Println("offline",offline)
+	offline.AddToOffline(ctx, message)
 }
 
 func (p *PubSubClient) reSubscribe() {

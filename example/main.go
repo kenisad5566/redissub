@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/go-redis/redis/v8"
+	jsoniter "github.com/json-iterator/go"
 	"github.com/kenisad5566/redissub/redissub"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/service"
@@ -90,7 +91,17 @@ func main() {
 		Method: http.MethodGet,
 		Path:   "/push",
 		Handler: func(w http.ResponseWriter, r *http.Request) {
-			PubSubClient.Publish(context.Background(), mockChannelKey, []byte("welcome someone"))
+			event := &redissub.Event{
+				Id :"1123",
+				EventName:"test",
+				From:"",
+				To :"",
+				Data :"211",
+				Time :time.Now().UnixMilli(),
+			}
+			data, _ := jsoniter.Marshal(event)
+
+			PubSubClient.Publish(context.Background(), mockChannelKey, data)
 
 		},
 	},)
@@ -100,6 +111,7 @@ func main() {
 		Path:   "/ws",
 		Handler: func(w http.ResponseWriter, r *http.Request) {
 			redissub.ServeWs(PubSubClient, w, r)
+			w.Write([]byte("hello"))
 		},
 	})
 
