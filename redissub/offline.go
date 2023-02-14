@@ -9,6 +9,10 @@ import (
 	"time"
 )
 
+const (
+	offlinePrefix = "redissub:offline:zset:%v"
+)
+
 type (
 	OffLine struct {
 		ExpireTime time.Duration // key ttl
@@ -57,6 +61,11 @@ func PullOffLine(ctx context.Context, offLine *OffLine, online *Online)  {
 		  }
 		}
 	}
+}
+
+
+func GenOfflineKey(id string) string {
+	return fmt.Sprintf(offlinePrefix, id)
 }
 
 

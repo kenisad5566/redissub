@@ -2,10 +2,17 @@ package redissub
 
 import (
 	"context"
+	"fmt"
 	red "github.com/go-redis/redis/v8"
 	jsoniter "github.com/json-iterator/go"
 	"strconv"
 	"time"
+)
+
+const (
+	waiterPrefix = "redissub:online:waiter:hash:%v"
+	receiverPrefix = "redissub:online:receiver:hash:%v"
+	offsetPrefix = "redissub:online:offset:%v"
 )
 
 type (
@@ -96,7 +103,17 @@ func (o *Offset) Offset(ctx context.Context) int64 {
 	return  int64(convResult)
 }
 
+func GenWaiterKey(id string) string {
+	return fmt.Sprintf(waiterPrefix, id)
+}
 
+func GenReceiverKey(id string) string {
+	return fmt.Sprintf(receiverPrefix, id)
+}
+
+func GenOffsetKey(id string) string {
+	return fmt.Sprintf(offsetPrefix, id)
+}
 
 
 
