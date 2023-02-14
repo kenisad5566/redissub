@@ -28,6 +28,8 @@ const (
 
 	// Send buffer size
 	bufSize = 256
+
+	ackEvent = "ack"
 )
 
 type (
@@ -43,6 +45,11 @@ type (
 		// ctx
 		Ctx context.Context
 
+		// uuid
+		Id string
+
+		Solid *Solid
+
 		mu sync.Mutex
 	}
 
@@ -51,14 +58,18 @@ type (
 )
 
 
-func MustNewClient(ctx context.Context, conn *websocket.Conn) *Client {
-	return &Client{
+func MustNewClient(ctx context.Context, conn *websocket.Conn, id string, solidOption *SolidOption) *Client {
+	client := &Client{
 		Channels: []string{},
 		conn:     conn,
 		SubIds:   map[string]int64{},
 		Send:     make(chan []byte, bufSize),
 		Ctx:      ctx,
+		Id: id,
 	}
+	client.Solid = MustNewSolid(solidOption, client)
+
+	return client
 }
 
 func (c *Client) Subscribe(channel string) error {
@@ -139,6 +150,10 @@ func (c *Client) ReadPump(pubSubClient *PubSubClient) {
 				subId := pubSubClient.Subscribe(c, channel, onMessage)
 				c.BindChannelWithSubId(channel, subId)
 			}()
+		}
+
+		if event.EventName == ackEvent {
+			c.Solid.Ack(context.Background(), &event)
 		}
 
 	}

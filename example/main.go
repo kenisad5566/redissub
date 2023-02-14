@@ -62,11 +62,11 @@ func main() {
 		client.Send <- data
 	})
 
-	redissub.AddWsEvent("sendMsg", func(ctx context.Context, data []byte) string {
-		return "sendMsg"
-	}, func(client *redissub.Client, data []byte) {
-		client.Send <- data
-	})
+	//redissub.AddWsEvent("sendMsg", func(ctx context.Context, data []byte) string {
+	//	return "sendMsg"
+	//}, func(client *redissub.Client, data []byte) {
+	//	client.Send <- data
+	//})
 
 
 	engine.AddRoute(rest.Route{
@@ -84,7 +84,16 @@ func main() {
 
 			http.ServeFile(w, r, "home.html")
 		},
-	})
+	},)
+
+	engine.AddRoute(rest.Route{
+		Method: http.MethodGet,
+		Path:   "/push",
+		Handler: func(w http.ResponseWriter, r *http.Request) {
+			PubSubClient.Publish(context.Background(), mockChannelKey, []byte("welcome someone"))
+
+		},
+	},)
 
 	engine.AddRoute(rest.Route{
 		Method: http.MethodGet,
@@ -96,14 +105,13 @@ func main() {
 
 
 	go func() {
-		ticker := time.NewTicker(5 * time.Second)
+		ticker := time.NewTicker(10 * time.Second)
 		for {
 			select {
 			case <-ticker.C:
-				fmt.Println("send msg")
 				fmt.Printf("PubSubClient %+v \n", PubSubClient)
-				PubSubClient.Publish(context.Background(), mockChannelKey, []byte("welcome someone"))
-				PubSubClient.Publish(context.Background(), "sendMsg", []byte("hello world"))
+				//PubSubClient.Publish(context.Background(), mockChannelKey, []byte("welcome someone"))
+				//PubSubClient.Publish(context.Background(), "sendMsg", []byte("hello world"))
 			}
 		}
 	}()

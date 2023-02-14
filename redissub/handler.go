@@ -56,9 +56,12 @@ func ServeWs(pubSubClient *PubSubClient, w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	id := "1"
 	ctx := r.Context()
-	client := MustNewClient(ctx, conn)
+	client := MustNewClient(ctx, conn, id, pubSubClient.SolidOption)
 
 	go client.ReadPump(pubSubClient)
 	go client.writePump(pubSubClient)
+	go client.Solid.PullOfflineMessage() // pull offline message to waiter for resend
+	go client.Solid.MonitorReSend()
 }

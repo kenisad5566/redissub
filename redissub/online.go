@@ -10,39 +10,36 @@ import (
 )
 
 const (
-	waiterPrefix = "redissub:online:waiter:hash:%v"
-	receiverPrefix = "redissub:online:receiver:hash:%v"
-	offsetPrefix = "redissub:online:offset:%v"
+	waiterPrefix = "redissub:online:waiter:hash:%v:%v"
+	receiverPrefix = "redissub:online:receiver:hash:%v:%v"
+	offsetPrefix = "redissub:online:offset:%v:%v"
 )
 
 type (
 	Online struct {
-		ExpireTime time.Duration // key ttl
-		FreshTime time.Duration // fresh time scope
 		Offset *Offset
 		Waiter *Waiter
 		Receiver *Receiver
-		rdb *red.Client
 	}
 	
 	Offset struct {
-		key string
-		rdb *red.Client
-		ExpireTime time.Duration // key ttl
+		Key string
+		Rdb *red.Client
+		ExpireTime time.Duration // Key ttl
 	}
 
 
 
 	Waiter struct {
-		key string
-		rdb *red.Client
-		ExpireTime time.Duration // key ttl
+		Key string
+		Rdb *red.Client
+		ExpireTime time.Duration // Key ttl
 	}
 
 	Receiver struct {
-		key string
-		rdb *red.Client
-		ExpireTime time.Duration // key ttl
+		Key string
+		Rdb *red.Client
+		ExpireTime time.Duration // Key ttl
 	}
 )
 
@@ -50,6 +47,7 @@ type (
 func (r *Online) AddToWaiter(ctx context.Context, data *Event)  {
 	r.Waiter.Push(ctx, data)
 }
+
 
 func (r *Online) Ack(ctx context.Context, data *Event)  {
 	r.Waiter.Del(ctx, data)
@@ -62,11 +60,20 @@ func (w *Waiter) Push(ctx context.Context, data *Event)  {
 	byteData, err := jsoniter.Marshal(data); if err != nil {
 		return
 	}
-	w.rdb.HSet(ctx, w.key, data.Id, string(byteData))
+	w.Rdb.HSet(ctx, w.Key, data.Id, string(byteData))
+}
+
+func (w *Waiter) All(ctx context.Context) []string {
+	result, err := w.Rdb.HGetAll(ctx, w.Key,).Result(); if err != nil {
+		return []string{}
+	}
+	fmt.Println("waiter All", result)
+
+	return []string{}
 }
 
 func (w *Waiter) Del(ctx context.Context,data *Event)  {
-	w.rdb.HDel(ctx, w.key, data.Id)
+	w.Rdb.HDel(ctx, w.Key, data.Id)
 }
 
 
@@ -74,11 +81,11 @@ func (r *Receiver) Received(ctx context.Context, data *Event)  {
 	byteData, err := jsoniter.Marshal(data); if err != nil {
 		return
 	}
-	r.rdb.HSet(ctx, r.key, data.Id, string(byteData))
+	r.Rdb.HSet(ctx, r.Key, data.Id, string(byteData))
 }
 
 func (r *Receiver) IsReceived(ctx context.Context, data *Event) bool {
-	result,err := r.rdb.HGet(ctx, r.key, data.Id).Result(); if err != nil {
+	result,err := r.Rdb.HGet(ctx, r.Key, data.Id).Result(); if err != nil {
 		return false
 	}
 
@@ -90,11 +97,11 @@ func (r *Receiver) IsReceived(ctx context.Context, data *Event) bool {
 }
 
 func (o *Offset) UpdateOffset(ctx context.Context, data *Event)  {
-	o.rdb.Set(ctx, o.key, strconv.Itoa(int(data.Time)), o.ExpireTime)
+	o.Rdb.Set(ctx, o.Key, strconv.Itoa(int(data.Time)), o.ExpireTime)
 }
 
 func (o *Offset) Offset(ctx context.Context) int64 {
-	result, err := o.rdb.Get(ctx, o.key).Result(); if err != nil {
+	result, err := o.Rdb.Get(ctx, o.Key).Result(); if err != nil {
 		return 0
 	}
 	convResult, err :=  strconv.Atoi(result); if err != nil {
@@ -103,16 +110,16 @@ func (o *Offset) Offset(ctx context.Context) int64 {
 	return  int64(convResult)
 }
 
-func GenWaiterKey(id string) string {
-	return fmt.Sprintf(waiterPrefix, id)
+func GenWaiterKey(channel, id string) string {
+	return fmt.Sprintf(waiterPrefix,channel, id)
 }
 
-func GenReceiverKey(id string) string {
-	return fmt.Sprintf(receiverPrefix, id)
+func GenReceiverKey(channel,id string) string {
+	return fmt.Sprintf(receiverPrefix,channel, id)
 }
 
-func GenOffsetKey(id string) string {
-	return fmt.Sprintf(offsetPrefix, id)
+func GenOffsetKey(channel,id string) string {
+	return fmt.Sprintf(offsetPrefix,channel, id)
 }
 
 
