@@ -1,5 +1,7 @@
 package redissub
 
+import "sort"
+
 // Contains reports whether v is present in s.
 func Contains(s []string, v string) bool {
 	return Index(s, v) >= 0
@@ -15,4 +17,25 @@ func Index(s []string, v string) int {
 		}
 	}
 	return -1
+}
+
+type Comparator func(a, b interface{}) int
+
+func Sort(values []interface{}, comparator Comparator) {
+	sort.Sort(sortable{values, comparator})
+}
+
+type sortable struct {
+	values     []interface{}
+	comparator Comparator
+}
+
+func (s sortable) Len() int {
+	return len(s.values)
+}
+func (s sortable) Swap(i, j int) {
+	s.values[i], s.values[j] = s.values[j], s.values[i]
+}
+func (s sortable) Less(i, j int) bool {
+	return s.comparator(s.values[i], s.values[j]) < 0
 }

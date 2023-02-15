@@ -11,6 +11,8 @@ import (
 	"github.com/zeromicro/go-zero/core/service"
 	"github.com/zeromicro/go-zero/rest"
 	"net/http"
+	"os"
+	"sync/atomic"
 	"time"
 )
 
@@ -37,24 +39,24 @@ func main() {
 	})
 	defer engine.Stop()
 
-
-
 	sub := redis.NewClient(&redis.Options{
-		Addr:	  "localhost:6379",
+		Addr:     "localhost:6379",
 		Password: "", // no password set
-		DB:		  0,  // use default DB
+		DB:       0,  // use default DB
 	})
 
 	pub := redis.NewClient(&redis.Options{
-		Addr:	  "localhost:6379",
+		Addr:     "localhost:6379",
 		Password: "", // no password set
-		DB:		  0,  // use default DB
+		DB:       0,  // use default DB
 	})
 	solidOption := &redissub.SolidOption{
-		ExpireTime:3600 * time.Second,
+		ExpireTime: 3600 * time.Second,
+		Duration:   5 * time.Second,
+		Rdb:        pub,
 	}
 
-	PubSubClient := redissub.NewPubSubClient(redissub.PubSubRedisOptions{Publisher: pub, Subscriber: sub, SolidOption:solidOption })
+	PubSubClient := redissub.NewPubSubClient(redissub.PubSubRedisOptions{Publisher: pub, Subscriber: sub, SolidOption: solidOption})
 
 	mockChannelKey := "mockChannel"
 	redissub.AddWsEvent("Room", func(ctx context.Context, data []byte) string {
@@ -63,12 +65,11 @@ func main() {
 		client.Send <- data
 	})
 
-	//redissub.AddWsEvent("sendMsg", func(ctx context.Context, data []byte) string {
-	//	return "sendMsg"
-	//}, func(client *redissub.Client, data []byte) {
-	//	client.Send <- data
-	//})
-
+	redissub.AddWsEvent("joinRoom", func(ctx context.Context, data []byte) string {
+		return "sendMsg"
+	}, func(client *redissub.Client, data []byte) {
+		client.Send <- data
+	})
 
 	engine.AddRoute(rest.Route{
 		Method: http.MethodGet,
@@ -85,36 +86,43 @@ func main() {
 
 			http.ServeFile(w, r, "home.html")
 		},
-	},)
+	})
 
 	engine.AddRoute(rest.Route{
 		Method: http.MethodGet,
 		Path:   "/push",
 		Handler: func(w http.ResponseWriter, r *http.Request) {
 			event := &redissub.Event{
-				Id :"1123",
-				EventName:"test",
-				From:"",
-				To :"",
-				Data :"211",
-				Time :time.Now().UnixMilli(),
+				Id:        GenUuid(time.Now()),
+				EventName: "test",
+				Data:      "211",
+				Time:      time.Now().UnixMilli(),
 			}
 			data, _ := jsoniter.Marshal(event)
 
 			PubSubClient.Publish(context.Background(), mockChannelKey, data)
 
+			event2 := &redissub.Event{
+				Id:        GenUuid(time.Now()),
+				EventName: "sendMsg",
+				Data:      "211",
+				Time:      time.Now().UnixMilli(),
+			}
+			data2, _ := jsoniter.Marshal(event2)
+			PubSubClient.Publish(context.Background(), "sendMsg", data2)
 		},
-	},)
+	})
 
 	engine.AddRoute(rest.Route{
 		Method: http.MethodGet,
 		Path:   "/ws",
 		Handler: func(w http.ResponseWriter, r *http.Request) {
-			redissub.ServeWs(PubSubClient, w, r)
+			redissub.ServeWs(PubSubClient, w, r, func(r *http.Request) string {
+				return GenUuid(time.Now())
+			})
 			w.Write([]byte("hello"))
 		},
 	})
-
 
 	go func() {
 		ticker := time.NewTicker(10 * time.Second)
@@ -130,4 +138,27 @@ func main() {
 	fmt.Println("listen ")
 	engine.Start()
 
+}
+
+var num int64
+
+func GenUuid(t time.Time) string {
+	s := t.Format("20060102150405")
+	m := t.UnixNano()/1e6 - t.UnixNano()/1e9*1e3
+	ms := sup(m, 3)
+	p := os.Getpid() % 1000
+	ps := sup(int64(p), 3)
+	i := atomic.AddInt64(&num, 1)
+	r := i % 10000
+	rs := sup(r, 4)
+	n := fmt.Sprintf("%s%s%s%s", s, ms, ps, rs)
+	return n
+}
+
+func sup(i int64, n int) string {
+	m := fmt.Sprintf("%d", i)
+	for len(m) < n {
+		m = fmt.Sprintf("0%s", m)
+	}
+	return m
 }

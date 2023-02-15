@@ -2,9 +2,7 @@ package redissub
 
 import (
 	"context"
-	"fmt"
 	red "github.com/go-redis/redis/v8"
-	jsoniter "github.com/json-iterator/go"
 	"math"
 	"sync"
 	"sync/atomic"
@@ -13,13 +11,10 @@ import (
 type Reviver func(key string, value string) interface{}
 
 type PubSubRedisOptions struct {
-	Publisher  *red.Client
-	Subscriber *red.Client
+	Publisher   *red.Client
+	Subscriber  *red.Client
 	SolidOption *SolidOption
 }
-
-
-
 
 type OnMessage func(client *Client, data []byte)
 
@@ -50,7 +45,7 @@ func NewPubSubClient(pubSubRedisOptions PubSubRedisOptions) *PubSubClient {
 		subId:       int64(0),
 		PubSub:      pubSubRedisOptions.Subscriber.Subscribe(context.Background()),
 		DropRun:     make(chan struct{}, 0),
-		SolidOption:pubSubRedisOptions.SolidOption, // Key ttl
+		SolidOption: pubSubRedisOptions.SolidOption, // Key ttl
 	}
 
 	go pubSubClient.Run()
@@ -104,12 +99,10 @@ func (p *PubSubClient) UnSubscribe(id int64) {
 func (p *PubSubClient) Publish(ctx context.Context, channel string, message []byte) {
 	p.Publisher.Publish(ctx, channel, message)
 	offline := &OffLine{
-		ExpireTime:p.SolidOption.ExpireTime,
-		Rdb:p.Publisher,
-		Key: GenOfflineKey(channel),
+		ExpireTime: p.SolidOption.ExpireTime,
+		Rdb:        p.Publisher,
+		Key:        GenOfflineKey(channel),
 	}
-	fmt.Println("Publish", string(message))
-	fmt.Println("offline",offline)
 	offline.AddToOffline(ctx, message)
 }
 
@@ -131,12 +124,8 @@ func (p *PubSubClient) Run() {
 				if ids, ok := p.subsRefsMap[channel]; ok {
 					for _, id := range ids {
 						if listener := p.subMap[id]; ok {
+							listener.Client.Solid.Push(context.Background(), channel, []byte(payLoad))
 							listener.OnMessage(listener.Client, []byte(payLoad))
-
-							var event Event
-							err := jsoniter.Unmarshal([]byte(payLoad), &event); if err == nil {
-								listener.Client.Solid.Push(context.Background(), channel, &event)
-							}
 						}
 					}
 				}

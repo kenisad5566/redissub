@@ -57,7 +57,6 @@ type (
 	GetSubId     func(channel string) int64
 )
 
-
 func MustNewClient(ctx context.Context, conn *websocket.Conn, id string, solidOption *SolidOption) *Client {
 	client := &Client{
 		Channels: []string{},
@@ -65,7 +64,7 @@ func MustNewClient(ctx context.Context, conn *websocket.Conn, id string, solidOp
 		SubIds:   map[string]int64{},
 		Send:     make(chan []byte, bufSize),
 		Ctx:      ctx,
-		Id: id,
+		Id:       id,
 	}
 	client.Solid = MustNewSolid(solidOption, client)
 
@@ -149,11 +148,15 @@ func (c *Client) ReadPump(pubSubClient *PubSubClient) {
 				}
 				subId := pubSubClient.Subscribe(c, channel, onMessage)
 				c.BindChannelWithSubId(channel, subId)
+
+				go c.Solid.PullOfflineMessage() // pull offline message to waiter for resend
 			}()
 		}
 
 		if event.EventName == ackEvent {
-			c.Solid.Ack(context.Background(), &event)
+			var ackEvent Event
+			_ = jsoniter.Unmarshal([]byte(event.Data), &ackEvent)
+			c.Solid.Ack(context.Background(), &ackEvent)
 		}
 
 	}
