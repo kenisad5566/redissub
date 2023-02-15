@@ -47,8 +47,6 @@ func (o *OffLine) MessageByOffset(ctx context.Context, offset int64) ([]string, 
 		return nil, err
 	}
 
-	fmt.Println("MessageByOffset", result)
-
 	return result, nil
 }
 

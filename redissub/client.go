@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"fmt"
 	"github.com/gorilla/websocket"
 	jsoniter "github.com/json-iterator/go"
+	"io"
 	"log"
 	"sync"
 	"time"
@@ -124,7 +124,6 @@ func (c *Client) ReadPump(pubSubClient *PubSubClient) {
 		_, message, err := c.conn.ReadMessage()
 
 		if err != nil {
-			fmt.Printf("read error % v \n", err)
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 				log.Printf("error: %v", err)
 			}
@@ -192,11 +191,7 @@ func (c *Client) writePump(pubSubClient *PubSubClient) {
 			w.Write(message)
 
 			// Add queued chat messages to the current websocket message.
-			n := len(c.Send)
-			for i := 0; i < n; i++ {
-				w.Write(newline)
-				w.Write(<-c.Send)
-			}
+			c.WriteData(w)
 
 			if err := w.Close(); err != nil {
 				return
@@ -208,4 +203,15 @@ func (c *Client) writePump(pubSubClient *PubSubClient) {
 			}
 		}
 	}
+}
+
+func (c *Client) WriteData(w io.WriteCloser) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	n := len(c.Send)
+	for i := 0; i < n; i++ {
+		w.Write(newline)
+		w.Write(<-c.Send)
+	}
+	return
 }

@@ -106,7 +106,6 @@ func (r *Receiver) IsReceived(ctx context.Context, data []byte) bool {
 	}
 
 	if result != "" {
-		fmt.Println("IsReceived result is empty", result)
 		return true
 	}
 
