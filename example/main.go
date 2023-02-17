@@ -22,6 +22,12 @@ var (
 	cpu     = flag.Int64("cpu", 500, "cpu threshold")
 )
 
+// go run main.go
+// visit localhost:3333 in browser
+// click joinRoom button
+// visit localhost:3333/push
+// message will send to you
+
 func main() {
 	flag.Parse()
 
@@ -52,21 +58,15 @@ func main() {
 	})
 	solidOption := &redissub.SolidOption{
 		ExpireTime: 3600 * time.Second,
-		Duration:   5 * time.Second,
+		Duration:   3 * time.Second,
 		Rdb:        pub,
 	}
 
 	PubSubClient := redissub.NewPubSubClient(redissub.PubSubRedisOptions{Publisher: pub, Subscriber: sub, SolidOption: solidOption})
 
-	mockChannelKey := "mockChannel"
-	redissub.AddWsEvent("Room", func(ctx context.Context, data []byte) string {
-		return mockChannelKey
-	}, func(client *redissub.Client, data []byte) {
-		client.Send <- data
-	})
-
+	channel := "joinRoom"
 	redissub.AddWsEvent("joinRoom", func(ctx context.Context, data []byte) string {
-		return "sendMsg"
+		return channel
 	}, func(client *redissub.Client, data []byte) {
 		client.Send <- data
 	})
@@ -92,24 +92,14 @@ func main() {
 		Method: http.MethodGet,
 		Path:   "/push",
 		Handler: func(w http.ResponseWriter, r *http.Request) {
-			event := &redissub.Event{
-				Id:        GenUuid(time.Now()),
-				EventName: "test",
-				Data:      "211",
-				Time:      time.Now().UnixMilli(),
-			}
-			data, _ := jsoniter.Marshal(event)
-
-			PubSubClient.Publish(context.Background(), mockChannelKey, data)
-
 			event2 := &redissub.Event{
 				Id:        GenUuid(time.Now()),
-				EventName: "sendMsg",
-				Data:      "211",
+				EventName: "you event",
+				Data:      "1",
 				Time:      time.Now().UnixMilli(),
 			}
 			data2, _ := jsoniter.Marshal(event2)
-			PubSubClient.Publish(context.Background(), "sendMsg", data2)
+			PubSubClient.Publish(context.Background(), channel, data2)
 		},
 	})
 
@@ -120,24 +110,11 @@ func main() {
 			redissub.ServeWs(PubSubClient, w, r, func(r *http.Request) string {
 				return GenUuid(time.Now())
 			})
-			w.Write([]byte("hello"))
 		},
 	})
 
-	go func() {
-		ticker := time.NewTicker(10 * time.Second)
-		for {
-			select {
-			case <-ticker.C:
-				fmt.Printf("PubSubClient %+v \n", PubSubClient)
-				//PubSubClient.Publish(context.Background(), mockChannelKey, []byte("welcome someone"))
-				//PubSubClient.Publish(context.Background(), "sendMsg", []byte("hello world"))
-			}
-		}
-	}()
-	fmt.Println("listen ")
+	fmt.Println("listen")
 	engine.Start()
-
 }
 
 var num int64

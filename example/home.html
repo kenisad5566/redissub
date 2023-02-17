@@ -29,6 +29,9 @@ window.onload = function () {
         return false;
     };
 
+    document.getElementById("joinRoom").onclick = function () {
+        conn.send(JSON.stringify({EventName:"joinRoom", Data:JSON.stringify({roomId:1})}));
+    };
 
     document.getElementById("close").onclick = function () {
         conn.close()
@@ -107,7 +110,8 @@ body {
 <body>
 <div id="log"></div>
 <form id="form">
-    <input type="submit" value="Send" />
+    <input type="submit" value="send" />
+    <input type="button" id="joinRoom" value="joinRoom" />
     <input type="button" id="close" value="close"/>
     <input type="button" id="ack" value="ack"/>
     <input type="text" id="msg" size="64" autofocus />
