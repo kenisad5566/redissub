@@ -132,32 +132,40 @@ func (c *Client) ReadPump(pubSubClient *PubSubClient) {
 		message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
 		var event Event
 		_ = jsoniter.Unmarshal(message, &event)
-		if onMessageWrapper, ok := subScribeFuncs[event.EventName]; ok {
-			onMessage := onMessageWrapper.OnMessage
-			channelKeyFun := onMessageWrapper.ChannelFun
-			var channel = event.EventName
-			if channelKeyFun != nil {
-				channel = channelKeyFun(c.Ctx, []byte(event.Data))
+
+		if event.EventName == "ping" {
+			var pong Event
+			pong.EventName = "pong"
+			pongByte, _ := jsoniter.Marshal(&pong)
+			c.Send <- pongByte
+		} else {
+			if onMessageWrapper, ok := subScribeFuncs[event.EventName]; ok {
+				onMessage := onMessageWrapper.OnMessage
+				channelKeyFun := onMessageWrapper.ChannelFun
+				var channel = event.EventName
+				if channelKeyFun != nil {
+					channel = channelKeyFun(c.Ctx, []byte(event.Data))
+				}
+
+				go func() {
+					err = c.Subscribe(channel)
+					if err != nil {
+						return
+					}
+					subId := pubSubClient.Subscribe(c, channel, onMessage)
+					c.BindChannelWithSubId(channel, subId)
+
+					go c.Solid.PullOfflineMessage() // pull offline message to waiter for resend
+				}()
 			}
 
-			go func() {
-				err = c.Subscribe(channel)
-				if err != nil {
-					return
-				}
-				subId := pubSubClient.Subscribe(c, channel, onMessage)
-				c.BindChannelWithSubId(channel, subId)
+			if event.EventName == ackEvent {
+				var ackEvent Event
+				_ = jsoniter.Unmarshal([]byte(event.Data), &ackEvent)
+				c.Solid.Ack(context.Background(), &ackEvent)
+			}
 
-				go c.Solid.PullOfflineMessage() // pull offline message to waiter for resend
-			}()
 		}
-
-		if event.EventName == ackEvent {
-			var ackEvent Event
-			_ = jsoniter.Unmarshal([]byte(event.Data), &ackEvent)
-			c.Solid.Ack(context.Background(), &ackEvent)
-		}
-
 	}
 }
 
