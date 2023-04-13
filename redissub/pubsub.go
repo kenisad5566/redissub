@@ -48,7 +48,9 @@ func NewPubSubClient(pubSubRedisOptions PubSubRedisOptions) *PubSubClient {
 		SolidOption: pubSubRedisOptions.SolidOption, // Key ttl
 	}
 
-	go pubSubClient.Run()
+	GoSafe(func() {
+		pubSubClient.Run()
+	})
 	return pubSubClient
 }
 
@@ -89,7 +91,9 @@ func (p *PubSubClient) UnSubscribe(id int64) {
 			// empty
 			if len(p.subsRefsMap[channel]) == 0 {
 				delete(p.subsRefsMap, channel)
-				go p.reSubscribe()
+				GoSafe(func() {
+					p.reSubscribe()
+				})
 			}
 		}
 	}

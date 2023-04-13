@@ -58,7 +58,13 @@ func ServeWs(pubSubClient *PubSubClient, w http.ResponseWriter, r *http.Request,
 	ctx := r.Context()
 	client := MustNewClient(ctx, conn, id, pubSubClient.SolidOption)
 
-	go client.ReadPump(pubSubClient)
-	go client.writePump(pubSubClient)
-	go client.Solid.MonitorReSend()
+	GoSafe(func() {
+		client.ReadPump(pubSubClient)
+	})
+	GoSafe(func() {
+		client.writePump(pubSubClient)
+	})
+	GoSafe(func() {
+		client.Solid.MonitorReSend()
+	})
 }

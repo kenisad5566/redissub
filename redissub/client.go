@@ -147,16 +147,17 @@ func (c *Client) ReadPump(pubSubClient *PubSubClient) {
 					channel = channelKeyFun(c.Ctx, []byte(event.Data))
 				}
 
-				go func() {
+				GoSafe(func() {
 					err = c.Subscribe(channel)
 					if err != nil {
 						return
 					}
 					subId := pubSubClient.Subscribe(c, channel, onMessage)
 					c.BindChannelWithSubId(channel, subId)
-
-					go c.Solid.PullOfflineMessage() // pull offline message to waiter for resend
-				}()
+					GoSafe(func() {
+						c.Solid.PullOfflineMessage() // pull offline message to waiter for resend
+					})
+				})
 			}
 
 			if event.EventName == ackEvent {

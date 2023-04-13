@@ -131,7 +131,7 @@ func (s *Solid) MonitorReSend() {
 		case <-ticker.C:
 			for _, channel := range s.Client.Channels {
 				c := channel
-				go func() {
+				GoSafe(func() {
 					rdb := s.Rdb
 					expireTime := s.ExpireTime
 					id := s.Client.Id
@@ -162,7 +162,7 @@ func (s *Solid) MonitorReSend() {
 						}
 						s.Client.Send <- []byte(str)
 					}
-				}()
+				})
 			}
 		}
 	}

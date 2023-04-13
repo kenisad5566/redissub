@@ -1,6 +1,9 @@
 package redissub
 
-import "sort"
+import (
+	"fmt"
+	"sort"
+)
 
 // Contains reports whether v is present in s.
 func Contains(s []string, v string) bool {
@@ -38,4 +41,28 @@ func (s sortable) Swap(i, j int) {
 }
 func (s sortable) Less(i, j int) bool {
 	return s.comparator(s.values[i], s.values[j]) < 0
+}
+
+
+func GoSafe(fn func()) {
+	go RunSafe(fn)
+}
+
+
+// RunSafe runs the given fn, recovers if fn panics.
+func RunSafe(fn func()) {
+	defer Recover()
+
+	fn()
+}
+
+
+func Recover(cleanups ...func()) {
+	for _, cleanup := range cleanups {
+		cleanup()
+	}
+
+	if p := recover(); p != nil {
+		fmt.Println("panic and recover error ", p)
+	}
 }
